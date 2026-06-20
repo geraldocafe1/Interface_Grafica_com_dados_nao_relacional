@@ -228,6 +228,32 @@ def index():
                 total_tamanho += int(doc["tamanho_arquivo"])
             except (ValueError, TypeError):
                 pass
+        elif doc.get("blob_name"):
+            # Registros antigos sem tamanho_arquivo: busca tamanho real do blob
+            blob_name = doc["blob_name"]
+            tamanho_real = 0
+            if container_client and not blob_name.startswith("local_"):
+                try:
+                    blob_client = container_client.get_blob_client(blob_name)
+                    props = blob_client.get_blob_properties()
+                    tamanho_real = props.size
+                    # Atualiza o documento no Cosmos DB para evitar re-consulta futura
+                    doc["tamanho_arquivo"] = tamanho_real
+                    if colecao:
+                        try:
+                            colecao.upsert_item(body=doc)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+            else:
+                local_path = os.path.join(LOCAL_UPLOAD_FOLDER, blob_name)
+                if os.path.exists(local_path):
+                    tamanho_real = os.path.getsize(local_path)
+                    doc["tamanho_arquivo"] = tamanho_real
+                    if not colecao:
+                        pass  # será salvo na próxima gravação local
+            total_tamanho += tamanho_real
             
         documentos.append(doc)
 
