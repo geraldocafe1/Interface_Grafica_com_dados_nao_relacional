@@ -83,7 +83,54 @@ if AZURE_STORAGE_CONNECTION_STRING and "sua_connection_string" not in AZURE_STOR
     except Exception as e:
         print(f"[AVISO] Erro ao inicializar Azure Blob Storage Client: {e}")
 else:
-    print("[AVISO] AZURE_STORAGE_CONNECTION_STRING nao configurada. Uploads de arquivos serao simulados.")
+    print("[AVISO] AZURE_STORAGE_CONNECTION_STRING nao configurada. Uploads de arquivos serao locais.")
+
+# --- Configuração do Upload Local Fallback ---
+LOCAL_UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "static", "uploads")
+
+def salvar_arquivo_local(arquivo, filename):
+    os.makedirs(LOCAL_UPLOAD_FOLDER, exist_ok=True)
+    filepath = os.path.join(LOCAL_UPLOAD_FOLDER, filename)
+    arquivo.save(filepath)
+    return f"/static/uploads/{filename}"
+
+def deletar_arquivo_local(filename):
+    if not filename:
+        return
+    filepath = os.path.join(LOCAL_UPLOAD_FOLDER, filename)
+    if os.path.exists(filepath):
+        try:
+            os.remove(filepath)
+            print(f"[OK] Arquivo local '{filename}' deletado com sucesso.")
+        except Exception as e:
+            print(f"[AVISO] Erro ao deletar arquivo local '{filename}': {e}")
+
+def obter_tipo_midia(filename, mimetype):
+    if not filename:
+        return "Nenhum"
+    ext = filename.split(".")[-1].lower()
+    if mimetype:
+        if mimetype.startswith("image/"):
+            return "Imagem"
+        if mimetype.startswith("video/"):
+            return "Vídeo"
+        if mimetype.startswith("audio/"):
+            return "Áudio"
+            
+    imagens = ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff"]
+    videos = ["mp4", "avi", "mkv", "mov", "webm", "flv", "wmv", "mpeg", "3gp"]
+    audios = ["mp3", "wav", "ogg", "m4a", "flac", "aac", "wma"]
+    documentos = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "rtf", "odt", "ods", "odp", "csv"]
+    
+    if ext in imagens:
+        return "Imagem"
+    elif ext in videos:
+        return "Vídeo"
+    elif ext in audios:
+        return "Áudio"
+    elif ext in documentos:
+        return "Documento"
+    return "Outro"
 
 # --- Mecanismo de Fallback para Banco Local JSON ---
 LOCAL_DB_FILE = "local_database.json"
@@ -109,6 +156,7 @@ def write_local_db(data):
 def index():
     filtro_nome = request.args.get("nome", "").strip()
     filtro_tag = request.args.get("tag", "").strip()
+    filtro_tipo = request.args.get("tipo", "").strip()
     
     documentos_raw = []
     usar_local = True
@@ -125,6 +173,9 @@ def index():
             if filtro_tag:
                 query_str += " AND (CONTAINS(c.nome_arquivo, @tag, true) OR IS_DEFINED(c.tags[@tag]))"
                 parameters.append({"name": "@tag", "value": filtro_tag})
+            if filtro_tipo:
+                query_str += " AND c.tipo_arquivo = @tipo"
+                parameters.append({"name": "@tipo", "value": filtro_tipo})
                 
             query_str += " ORDER BY c.data_envio DESC"
             
@@ -147,11 +198,14 @@ def index():
                 d for d in documentos_raw 
                 if (d.get("nome_arquivo") and filtro_tag.lower() in d["nome_arquivo"].lower()) or (filtro_tag in d.get("tags", {}))
             ]
+        if filtro_tipo:
+            documentos_raw = [d for d in documentos_raw if d.get("tipo_arquivo") == filtro_tipo]
         documentos_raw.sort(key=lambda x: x.get("data_envio", ""), reverse=True)
     
     documentos = []
     total_idade = 0
     contagem_idade = 0
+    total_tamanho = 0
     formatos = {}
 
     for doc in documentos_raw:
@@ -168,19 +222,37 @@ def index():
         if doc.get("nome_arquivo"):
             ext = doc["nome_arquivo"].split(".")[-1].upper()
             formatos[ext] = formatos.get(ext, 0) + 1
+
+        if doc.get("tamanho_arquivo"):
+            try:
+                total_tamanho += int(doc["tamanho_arquivo"])
+            except (ValueError, TypeError):
+                pass
             
         documentos.append(doc)
 
     media_idade = round(total_idade / contagem_idade, 1) if contagem_idade > 0 else 0
     formato_comum = max(formatos, key=formatos.get) if formatos else "Nenhum"
 
+    def formatar_tamanho(bytes_sz):
+        if not bytes_sz:
+            return "0 Bytes"
+        for unit in ['Bytes', 'KB', 'MB', 'GB']:
+            if bytes_sz < 1024:
+                return f"{bytes_sz:.1f} {unit}"
+            bytes_sz /= 1024
+        return f"{bytes_sz:.1f} TB"
+
     stats = {
         "total": len(documentos),
         "media_idade": media_idade,
-        "formato_comum": formato_comum
+        "formato_comum": formato_comum,
+        "total_tamanho": formatar_tamanho(total_tamanho),
+        "cosmos_status": colecao is not None,
+        "storage_status": container_client is not None
     }
 
-    return render_template("index.html", documentos=documentos, filtro_nome=filtro_nome, filtro_tag=filtro_tag, stats=stats)
+    return render_template("index.html", documentos=documentos, filtro_nome=filtro_nome, filtro_tag=filtro_tag, filtro_tipo=filtro_tipo, stats=stats)
 
 
 @app.route("/upload", methods=["POST"])
@@ -207,20 +279,33 @@ def upload():
             "nome": nome,
             "idade": int(idade) if idade else None,
             "data_envio": datetime.datetime.now(UTC).isoformat(),
-            "tags": tags_mapeadas
+            "tags": tags_mapeadas,
+            "tipo_arquivo": "Nenhum"
         }
 
         if arquivo and arquivo.filename != '':
+            # Extrair tamanho
+            arquivo.stream.seek(0, os.SEEK_END)
+            tamanho = arquivo.stream.tell()
+            arquivo.stream.seek(0)
+            
+            mimetype = arquivo.content_type or 'application/octet-stream'
+            tipo_arquivo = obter_tipo_midia(arquivo.filename, mimetype)
+            
+            doc["tamanho_arquivo"] = tamanho
+            doc["mimetype"] = mimetype
+            doc["tipo_arquivo"] = tipo_arquivo
+            doc["nome_arquivo"] = arquivo.filename
+            
+            blob_name = f"{uuid.uuid4().hex}_{arquivo.filename}"
+            doc["blob_name"] = blob_name
+
             if container_client:
-                blob_name = f"{uuid.uuid4().hex}_{arquivo.filename}"
-                blob_client = container_client.get_blob_client(blob_name)
-                
-                # Configura o content_type correto para o navegador exibir em vez de baixar
-                content_type = arquivo.content_type or 'application/octet-stream'
-                content_settings = ContentSettings(content_type=content_type)
-                
+                content_settings = ContentSettings(content_type=mimetype)
                 try:
+                    blob_client = container_client.get_blob_client(blob_name)
                     blob_client.upload_blob(arquivo.stream, overwrite=True, content_settings=content_settings)
+                    doc["url_arquivo"] = blob_client.url
                 except Exception as e:
                     # Se o container nao existir, tenta criar e reenviar
                     if "ContainerNotFound" in str(e) or "does not exist" in str(e):
@@ -228,19 +313,14 @@ def upload():
                             container_client.create_container()
                             arquivo.stream.seek(0)
                             blob_client.upload_blob(arquivo.stream, overwrite=True, content_settings=content_settings)
+                            doc["url_arquivo"] = blob_client.url
                         except Exception as inner_e:
                             raise inner_e
                     else:
                         raise e
-                
-                doc["url_arquivo"] = blob_client.url
-                doc["blob_name"] = blob_name
-                doc["nome_arquivo"] = arquivo.filename
             else:
-                # Simula link local se Azure Storage nao estiver configurado
-                doc["url_arquivo"] = "#"
-                doc["blob_name"] = f"local_{uuid.uuid4().hex}_{arquivo.filename}"
-                doc["nome_arquivo"] = arquivo.filename
+                local_url = salvar_arquivo_local(arquivo, blob_name)
+                doc["url_arquivo"] = local_url
 
         if colecao:
             colecao.create_item(body=doc)
@@ -322,47 +402,62 @@ def editar(doc_id):
 
         # Gerencia remocao ou substituicao de arquivo
         if remover_arquivo or (arquivo and arquivo.filename != ''):
-            if "blob_name" in doc_existente and container_client:
-                try:
-                    blob_client = container_client.get_blob_client(doc_existente["blob_name"])
-                    blob_client.delete_blob()
-                except Exception:
-                    pass
+            blob_name_antigo = doc_existente.get("blob_name")
+            if blob_name_antigo:
+                if container_client and not blob_name_antigo.startswith("local_"):
+                    try:
+                        blob_client = container_client.get_blob_client(blob_name_antigo)
+                        blob_client.delete_blob()
+                    except Exception:
+                        pass
+                else:
+                    deletar_arquivo_local(blob_name_antigo)
             
             doc_existente.pop("url_arquivo", None)
             doc_existente.pop("blob_name", None)
             doc_existente.pop("nome_arquivo", None)
+            doc_existente.pop("tamanho_arquivo", None)
+            doc_existente.pop("mimetype", None)
+            doc_existente["tipo_arquivo"] = "Nenhum"
 
         # Insere novo arquivo caso enviado
         if arquivo and arquivo.filename != '':
+            # Extrair tamanho
+            arquivo.stream.seek(0, os.SEEK_END)
+            tamanho = arquivo.stream.tell()
+            arquivo.stream.seek(0)
+            
+            mimetype = arquivo.content_type or 'application/octet-stream'
+            tipo_arquivo = obter_tipo_midia(arquivo.filename, mimetype)
+            
+            doc_existente["tamanho_arquivo"] = tamanho
+            doc_existente["mimetype"] = mimetype
+            doc_existente["tipo_arquivo"] = tipo_arquivo
+            doc_existente["nome_arquivo"] = arquivo.filename
+            
+            blob_name = f"{uuid.uuid4().hex}_{arquivo.filename}"
+            doc_existente["blob_name"] = blob_name
+
             if container_client:
-                blob_name = f"{uuid.uuid4().hex}_{arquivo.filename}"
-                blob_client = container_client.get_blob_client(blob_name)
-                
-                # Configura o content_type correto para o navegador exibir em vez de baixar
-                content_type = arquivo.content_type or 'application/octet-stream'
-                content_settings = ContentSettings(content_type=content_type)
-                
+                content_settings = ContentSettings(content_type=mimetype)
                 try:
+                    blob_client = container_client.get_blob_client(blob_name)
                     blob_client.upload_blob(arquivo.stream, overwrite=True, content_settings=content_settings)
+                    doc_existente["url_arquivo"] = blob_client.url
                 except Exception as e:
-                    # Se o container nao existir, tenta criar e reenviar
                     if "ContainerNotFound" in str(e) or "does not exist" in str(e):
                         try:
                             container_client.create_container()
                             arquivo.stream.seek(0)
                             blob_client.upload_blob(arquivo.stream, overwrite=True, content_settings=content_settings)
+                            doc_existente["url_arquivo"] = blob_client.url
                         except Exception as inner_e:
                             raise inner_e
                     else:
                         raise e
-                doc_existente["url_arquivo"] = blob_client.url
-                doc_existente["blob_name"] = blob_name
-                doc_existente["nome_arquivo"] = arquivo.filename
             else:
-                doc_existente["url_arquivo"] = "#"
-                doc_existente["blob_name"] = f"local_{uuid.uuid4().hex}_{arquivo.filename}"
-                doc_existente["nome_arquivo"] = arquivo.filename
+                local_url = salvar_arquivo_local(arquivo, blob_name)
+                doc_existente["url_arquivo"] = local_url
 
         if colecao:
             colecao.upsert_item(body=doc_existente)
@@ -398,25 +493,37 @@ def download(doc_id):
         if not doc or "blob_name" not in doc:
             return "Arquivo nao encontrado para este registro", 404
         
-        if container_client:
+        blob_name = doc["blob_name"]
+        
+        if container_client and not blob_name.startswith("local_"):
             try:
-                blob_client = container_client.get_blob_client(doc["blob_name"])
+                blob_client = container_client.get_blob_client(blob_name)
                 blob_data = blob_client.download_blob()
                 return send_file(
                     io.BytesIO(blob_data.readall()),
-                    mimetype=blob_data.properties.content_settings.content_type or 'application/octet-stream',
-                    download_name=doc.get("nome_arquivo", doc["blob_name"]),
+                    mimetype=doc.get("mimetype") or blob_data.properties.content_settings.content_type or 'application/octet-stream',
+                    download_name=doc.get("nome_arquivo", blob_name),
                     as_attachment=True
                 )
             except Exception:
                 pass
 
+        # Servir arquivo local
+        local_path = os.path.join(LOCAL_UPLOAD_FOLDER, blob_name)
+        if os.path.exists(local_path):
+            return send_file(
+                local_path,
+                mimetype=doc.get("mimetype") or 'application/octet-stream',
+                download_name=doc.get("nome_arquivo", blob_name),
+                as_attachment=True
+            )
+
         if "url_arquivo" in doc and doc["url_arquivo"] != "#":
             return redirect(doc["url_arquivo"])
             
-        return "Arquivo nao disponivel localmente", 404
+        return "Arquivo nao disponivel", 404
     except Exception as e:
-        return "Erro ao baixar arquivo", 500
+        return f"Erro ao baixar arquivo: {e}", 500
 
 
 @app.route("/view/<doc_id>")
@@ -438,24 +545,35 @@ def view_file(doc_id):
         if not doc or "blob_name" not in doc:
             return "Arquivo nao encontrado para este registro", 404
         
-        if container_client:
+        blob_name = doc["blob_name"]
+        
+        if container_client and not blob_name.startswith("local_"):
             try:
-                blob_client = container_client.get_blob_client(doc["blob_name"])
+                blob_client = container_client.get_blob_client(blob_name)
                 blob_data = blob_client.download_blob()
                 return send_file(
                     io.BytesIO(blob_data.readall()),
-                    mimetype=blob_data.properties.content_settings.content_type or 'application/octet-stream',
+                    mimetype=doc.get("mimetype") or blob_data.properties.content_settings.content_type or 'application/octet-stream',
                     as_attachment=False
                 )
             except Exception:
                 pass
 
+        # Servir arquivo local
+        local_path = os.path.join(LOCAL_UPLOAD_FOLDER, blob_name)
+        if os.path.exists(local_path):
+            return send_file(
+                local_path,
+                mimetype=doc.get("mimetype") or 'application/octet-stream',
+                as_attachment=False
+            )
+
         if "url_arquivo" in doc and doc["url_arquivo"] != "#":
             return redirect(doc["url_arquivo"])
 
-        return "Arquivo nao disponivel localmente", 404
+        return "Arquivo nao disponivel", 404
     except Exception as e:
-        return "Arquivo nao encontrado", 404
+        return f"Arquivo nao encontrado: {e}", 404
 
 
 @app.route("/deletar/<doc_id>", methods=["GET"])
@@ -475,12 +593,16 @@ def deletar(doc_id):
                     break
 
         if doc:
-            if "blob_name" in doc and container_client:
-                try:
-                    blob_client = container_client.get_blob_client(doc["blob_name"])
-                    blob_client.delete_blob()
-                except Exception:
-                    pass
+            blob_name = doc.get("blob_name")
+            if blob_name:
+                if container_client and not blob_name.startswith("local_"):
+                    try:
+                        blob_client = container_client.get_blob_client(blob_name)
+                        blob_client.delete_blob()
+                    except Exception:
+                        pass
+                else:
+                    deletar_arquivo_local(blob_name)
             
             if colecao:
                 try:
@@ -494,7 +616,7 @@ def deletar(doc_id):
 
         return redirect(url_for("index"))
     except Exception as e:
-        return "Erro ao deletar", 500
+        return f"Erro ao deletar: {e}", 500
 
 
 @app.route("/exportar_zip", methods=["GET"])
@@ -514,19 +636,32 @@ def exportar_zip():
             for doc in documentos:
                 nome_arquivo = doc.get("nome_arquivo")
                 blob_name = doc.get("blob_name")
-                if not nome_arquivo or not blob_name or not container_client:
+                if not nome_arquivo or not blob_name:
                     continue
-                try:
-                    blob_client = container_client.get_blob_client(blob_name)
-                    blob_data = blob_client.download_blob().readall()
-                    zipf.writestr(nome_arquivo, blob_data)
-                except Exception:
-                    continue
+                
+                salvou = False
+                if container_client and not blob_name.startswith("local_"):
+                    try:
+                        blob_client = container_client.get_blob_client(blob_name)
+                        blob_data = blob_client.download_blob().readall()
+                        zipf.writestr(nome_arquivo, blob_data)
+                        salvou = True
+                    except Exception:
+                        pass
+                
+                if not salvou:
+                    local_path = os.path.join(LOCAL_UPLOAD_FOLDER, blob_name)
+                    if os.path.exists(local_path):
+                        try:
+                            with open(local_path, "rb") as lf:
+                                zipf.writestr(nome_arquivo, lf.read())
+                        except Exception:
+                            pass
                     
         zip_buffer.seek(0)
         return send_file(zip_buffer, download_name="arquivos_enviados.zip", as_attachment=True)
     except Exception as e:
-        return "Erro ao exportar zip", 500
+        return f"Erro ao exportar zip: {e}", 500
 
 
 if __name__ == "__main__":

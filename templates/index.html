@@ -17,8 +17,8 @@
     <style>
         :root {
             --bg-dark: #070b13;
-            --card-bg: rgba(18, 26, 47, 0.7);
-            --border-color: rgba(255, 255, 255, 0.07);
+            --card-bg: rgba(18, 26, 47, 0.65);
+            --border-color: rgba(255, 255, 255, 0.08);
             --accent-blue: #00b4d8;
             --accent-purple: #9d4edf;
             --accent-teal: #06d6a0;
@@ -26,6 +26,8 @@
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --gradient-primary: linear-gradient(135deg, #00b4d8, #9d4edf);
+            --glow-blue: 0 0 15px rgba(0, 180, 216, 0.25);
+            --glow-purple: 0 0 15px rgba(157, 78, 223, 0.25);
         }
         
         body {
@@ -33,9 +35,9 @@
             color: var(--text-main);
             font-family: 'Inter', sans-serif;
             background-image: 
-                radial-gradient(at 10% 10%, rgba(0, 180, 216, 0.12) 0px, transparent 40%),
-                radial-gradient(at 90% 90%, rgba(157, 78, 223, 0.12) 0px, transparent 40%),
-                radial-gradient(at 50% 50%, rgba(6, 214, 160, 0.03) 0px, transparent 50%);
+                radial-gradient(at 8% 8%, rgba(0, 180, 216, 0.15) 0px, transparent 40%),
+                radial-gradient(at 92% 92%, rgba(157, 78, 223, 0.15) 0px, transparent 40%),
+                radial-gradient(at 50% 50%, rgba(6, 214, 160, 0.04) 0px, transparent 50%);
             background-attachment: fixed;
             min-height: 100vh;
         }
@@ -77,7 +79,7 @@
             padding: 28px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35);
             height: 100%;
-            transition: border-color 0.3s ease;
+            transition: all 0.3s ease;
         }
 
         .glass-panel:hover {
@@ -109,6 +111,7 @@
         }
         .metric-card.green::before { background: var(--accent-teal); }
         .metric-card.purple::before { background: var(--accent-purple); }
+        .metric-card.pink::before { background: var(--accent-pink); }
 
         .metric-card:hover::before {
             width: 6px;
@@ -307,6 +310,7 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             background: rgba(30, 41, 59, 0.4);
             color: var(--text-muted);
+            text-decoration: none;
         }
 
         .table-action-btn:hover {
@@ -341,6 +345,297 @@
         .bg-dark-opacity {
             background: rgba(10, 15, 30, 0.65);
         }
+
+        /* --- CLOUD CONNECTION STATUS BADGES --- */
+        .status-badge-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid transparent;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .status-connected {
+            background: rgba(6, 214, 160, 0.08);
+            color: var(--accent-teal);
+            border-color: rgba(6, 214, 160, 0.2);
+            box-shadow: 0 0 10px rgba(6, 214, 160, 0.05);
+        }
+
+        .status-fallback {
+            background: rgba(248, 150, 30, 0.08);
+            color: #f8961e;
+            border-color: rgba(248, 150, 30, 0.25);
+            box-shadow: 0 0 10px rgba(248, 150, 30, 0.05);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-connected .status-dot {
+            background-color: var(--accent-teal);
+            box-shadow: 0 0 8px var(--accent-teal);
+        }
+
+        .status-fallback .status-dot {
+            background-color: #f8961e;
+            box-shadow: 0 0 8px #f8961e;
+        }
+
+        /* --- VIEW MODE TOGGLE BUTTONS --- */
+        .view-toggle-container {
+            display: inline-flex;
+            background: rgba(10, 15, 30, 0.6);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .view-toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .view-toggle-btn:hover {
+            color: #fff;
+        }
+
+        .view-toggle-btn.active {
+            background: var(--gradient-primary);
+            color: #fff;
+            box-shadow: var(--glow-blue);
+        }
+
+        /* --- CATEGORIES PILLS FILTER --- */
+        .category-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .category-pill {
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            background: rgba(18, 26, 47, 0.4);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .category-pill:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-main);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .category-pill.active {
+            background: rgba(0, 180, 216, 0.12);
+            color: var(--accent-blue);
+            border-color: rgba(0, 180, 216, 0.35);
+            box-shadow: 0 0 12px rgba(0, 180, 216, 0.1);
+        }
+
+        /* --- GALLERY GRID VIEW --- */
+        .gallery-grid {
+            display: flex;
+            flex-wrap: wrap;
+            margin-right: -12px;
+            margin-left: -12px;
+        }
+
+        .gallery-item {
+            padding: 12px;
+        }
+
+        .gallery-card {
+            background: rgba(18, 26, 47, 0.45);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .gallery-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 180, 216, 0.3);
+            box-shadow: 0 10px 25px rgba(0, 180, 216, 0.15);
+        }
+
+        .gallery-media-container {
+            height: 170px;
+            width: 100%;
+            background: rgba(10, 15, 30, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border-bottom: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .gallery-media-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-card:hover .gallery-media-img {
+            transform: scale(1.05);
+        }
+
+        .gallery-media-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        }
+
+        .gallery-media-placeholder {
+            font-size: 2.8rem;
+            color: var(--text-muted);
+            opacity: 0.45;
+            transition: all 0.3s ease;
+        }
+
+        .gallery-card:hover .gallery-media-placeholder {
+            transform: scale(1.1);
+            color: var(--accent-blue);
+            opacity: 0.85;
+            filter: drop-shadow(0 0 8px rgba(0, 180, 216, 0.3));
+        }
+
+        .gallery-card-body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .gallery-card-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .gallery-card-subtitle {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .gallery-card-tags {
+            margin-bottom: 14px;
+            flex-grow: 1;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 2px;
+        }
+
+        .gallery-card-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-badge-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(10, 15, 30, 0.85);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* --- DYNAMIC FORM DRAGZONE FILE PREVIEW --- */
+        .form-file-preview {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .form-file-preview-img {
+            max-width: 100%;
+            max-height: 130px;
+            border-radius: 8px;
+            object-fit: contain;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin-bottom: 8px;
+        }
+
+        .form-file-preview-icon {
+            font-size: 2.8rem;
+            color: var(--accent-blue);
+            filter: drop-shadow(0 0 10px rgba(0, 180, 216, 0.2));
+            margin-bottom: 8px;
+        }
+
+        /* --- OTHER UTILITIES --- */
+        .fs-10 {
+            font-size: 0.65rem !important;
+        }
+        
+        .transition-all {
+            transition: all 0.3s ease !important;
+        }
     </style>
 </head>
 <body>
@@ -353,6 +648,29 @@
                 <i class="fa-solid fa-server me-3 text-info" style="filter: drop-shadow(0 0 10px rgba(0,180,216,0.3));"></i><span class="gradient-text">Cosmos DB</span> Explorer
             </h1>
             <p class="text-secondary mt-2 mb-0 fs-5">Laboratório de Armazenamento Não-Relacional e GridFS</p>
+            
+            <!-- Connection Status Badges -->
+            <div class="status-badge-container">
+                {% if stats.cosmos_status %}
+                    <span class="status-badge status-connected" title="Cosmos DB NoSQL API ativa no Azure.">
+                        <span class="status-dot"></span> Cosmos DB: Nuvem
+                    </span>
+                {% else %}
+                    <span class="status-badge status-fallback" title="Azure Cosmos DB indisponível. Executando localmente via local_database.json.">
+                        <span class="status-dot"></span> Cosmos DB: Local Fallback
+                    </span>
+                {% endif %}
+                
+                {% if stats.storage_status %}
+                    <span class="status-badge status-connected" title="Azure Blob Storage ativo e conectado.">
+                        <span class="status-dot"></span> Azure Storage: Nuvem
+                    </span>
+                {% else %}
+                    <span class="status-badge status-fallback" title="Azure Blob Storage indisponível. Armazenando arquivos localmente em static/uploads/.">
+                        <span class="status-dot"></span> Azure Storage: Local Fallback
+                    </span>
+                {% endif %}
+            </div>
         </div>
         <div class="col-md-4 text-md-end mt-4 mt-md-0">
             <a href="/exportar_zip" class="btn btn-outline-custom btn-custom">
@@ -362,15 +680,15 @@
     </div>
 
     <!-- Stats & Analytics Dashboard Row -->
-    <div class="row g-4 mb-5">
+    <div class="row g-4 mb-4">
         <!-- Metric Total -->
         <div class="col-xl-3 col-md-6">
             <div class="metric-card h-100 d-flex flex-column justify-content-between">
                 <div>
-                    <div class="text-secondary text-uppercase small fw-bold mb-1">Total de Registos</div>
-                    <div class="fs-1 fw-bold text-white font-outfit">{{ stats.total }}</div>
+                    <div class="text-secondary text-uppercase small fw-bold mb-1">Total de Registros</div>
+                    <div class="fs-2 fw-bold text-white font-outfit">{{ stats.total }}</div>
                 </div>
-                <div class="text-muted small mt-2"><i class="fa-solid fa-database me-1"></i> Documentos NoSQL</div>
+                <div class="text-muted small mt-2"><i class="fa-solid fa-database me-1 text-info"></i> Documentos NoSQL</div>
             </div>
         </div>
         <!-- Metric Average Age -->
@@ -378,27 +696,55 @@
             <div class="metric-card green h-100 d-flex flex-column justify-content-between">
                 <div>
                     <div class="text-secondary text-uppercase small fw-bold mb-1">Média de Idades</div>
-                    <div class="fs-1 fw-bold text-white font-outfit">
-                        {{ stats.media_idade }} <span class="fs-5 text-secondary fw-normal">anos</span>
+                    <div class="fs-2 fw-bold text-white font-outfit">
+                        {{ stats.media_idade }} <span class="fs-6 text-secondary fw-normal">anos</span>
                     </div>
                 </div>
-                <div class="text-muted small mt-2"><i class="fa-solid fa-users me-1"></i> Amostra ativa</div>
+                <div class="text-muted small mt-2"><i class="fa-solid fa-users me-1 text-success"></i> Amostra ativa</div>
             </div>
         </div>
-        <!-- Chart Formatos -->
+        <!-- Metric Storage Used -->
         <div class="col-xl-3 col-md-6">
-            <div class="metric-card purple h-100">
-                <div class="text-secondary text-uppercase small fw-bold mb-2">Formatos de Ficheiro</div>
-                <div class="chart-container">
+            <div class="metric-card purple h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="text-secondary text-uppercase small fw-bold mb-1">Armazenamento Total</div>
+                    <div class="fs-2 fw-bold text-white font-outfit">{{ stats.total_tamanho }}</div>
+                </div>
+                <div class="text-muted small mt-2"><i class="fa-solid fa-cloud me-1 text-purple" style="color: var(--accent-purple);"></i> Azure Blobs / Disco</div>
+            </div>
+        </div>
+        <!-- Metric Format Comum -->
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card pink h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="text-secondary text-uppercase small fw-bold mb-1">Extensão Comum</div>
+                    <div class="fs-2 fw-bold text-white font-outfit">.{{ stats.formato_comum }}</div>
+                </div>
+                <div class="text-muted small mt-2"><i class="fa-solid fa-file-arrow-up me-1 text-danger" style="color: var(--accent-pink);"></i> Formato dominante</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Panel Row -->
+    <div class="row g-4 mb-5">
+        <!-- Chart Formatos / Categorias -->
+        <div class="col-md-6">
+            <div class="glass-panel py-3" style="min-height: 240px;">
+                <h6 class="text-secondary text-uppercase small fw-bold mb-3 font-outfit">
+                    <i class="fa-solid fa-chart-pie me-2 text-info"></i>Categorias de Mídia
+                </h6>
+                <div class="chart-container" style="height: 180px;">
                     <canvas id="chartFormatos"></canvas>
                 </div>
             </div>
         </div>
         <!-- Chart Idades -->
-        <div class="col-xl-3 col-md-6">
-            <div class="metric-card h-100">
-                <div class="text-secondary text-uppercase small fw-bold mb-2">Grupos de Idade</div>
-                <div class="chart-container">
+        <div class="col-md-6">
+            <div class="glass-panel py-3" style="min-height: 240px;">
+                <h6 class="text-secondary text-uppercase small fw-bold mb-3 font-outfit">
+                    <i class="fa-solid fa-chart-column me-2 text-purple" style="color: var(--accent-purple);"></i>Distribuição de Idades
+                </h6>
+                <div class="chart-container" style="height: 180px;">
                     <canvas id="chartIdades"></canvas>
                 </div>
             </div>
@@ -439,21 +785,26 @@
                     </div>
                     <!-- Drag and Drop File -->
                     <div class="mb-4">
-                        <label class="form-label text-secondary small fw-bold">Anexo (Azure Blob / GridFS)</label>
+                        <label class="form-label text-secondary small fw-bold">Anexo (Imagem, Vídeo, Áudio ou Outro)</label>
                         <div class="upload-drop-zone" id="drop_zone">
                             <i class="fa-solid fa-cloud-arrow-up fs-3 mb-2 text-info"></i>
                             <p class="mb-1 text-white small fw-semibold">Arraste seu ficheiro aqui</p>
                             <p class="text-secondary mb-0" style="font-size: 0.7rem;">ou clique para procurar</p>
                             <input type="file" name="arquivo" id="file_input" class="d-none">
                         </div>
-                        <div id="file_info" class="d-none mt-2 p-2 rounded bg-dark border border-secondary align-items-center justify-content-between">
-                            <span class="text-info small text-truncate" style="max-width: 220px;"><i class="fa-solid fa-file me-2"></i><span id="file_name"></span></span>
-                            <button type="button" id="btn_remove_file" class="btn btn-link text-danger p-0 ms-2 text-decoration-none"><i class="fa-solid fa-xmark"></i></button>
+                        <div id="file_info" class="d-none mt-2 p-3 rounded bg-dark border border-secondary flex-column align-items-center">
+                            <div class="form-file-preview" id="form_file_preview_container">
+                                <!-- Preview de arquivo por JS -->
+                            </div>
+                            <div class="d-flex w-100 align-items-center justify-content-between border-top border-secondary pt-2 mt-2">
+                                <span class="text-info small text-truncate" style="max-width: 200px;"><i class="fa-solid fa-file me-2"></i><span id="file_name"></span></span>
+                                <button type="button" id="btn_remove_file" class="btn btn-link text-danger p-0 text-decoration-none"><i class="fa-solid fa-xmark"></i> Remover</button>
+                            </div>
                         </div>
                     </div>
                     <!-- Submit -->
                     <button type="submit" class="btn btn-primary w-100 btn-custom btn-gradient mt-2">
-                        Salvar na Azure <i class="fa-solid fa-arrow-right ms-2"></i>
+                        Salvar Documento <i class="fa-solid fa-arrow-right ms-2"></i>
                     </button>
                 </form>
             </div>
@@ -462,8 +813,24 @@
         <!-- Table and Filter Column (Right) -->
         <div class="col-lg-8">
             <div class="glass-panel">
+                <!-- Header Actions: Title and View Toggle -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold m-0 text-white font-outfit d-flex align-items-center">
+                        <i class="fa-solid fa-database me-2 text-info"></i>Registos NoSQL
+                    </h5>
+                    <div class="view-toggle-container">
+                        <button type="button" class="view-toggle-btn active" id="btn_view_list" onclick="setViewMode('list')">
+                            <i class="fa-solid fa-list"></i> Lista
+                        </button>
+                        <button type="button" class="view-toggle-btn" id="btn_view_grid" onclick="setViewMode('grid')">
+                            <i class="fa-solid fa-grip"></i> Galeria
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Search & Filters -->
                 <form method="GET" action="/" class="row g-3 mb-4">
+                    <input type="hidden" name="tipo" id="search_tipo" value="{{ filtro_tipo }}">
                     <div class="col-md-5">
                         <div class="input-group">
                             <span class="input-group-text bg-transparent border-end-0 border-secondary"><i class="fa-solid fa-search text-secondary"></i></span>
@@ -481,8 +848,30 @@
                     </div>
                 </form>
 
-                <!-- Data Grid -->
-                <div class="table-container">
+                <!-- Media Category Pills Filter -->
+                <div class="category-pills">
+                    <div class="category-pill {% if not filtro_tipo %}active{% endif %}" onclick="filterByCategory('')">
+                        <i class="fa-solid fa-border-all"></i> Todos
+                    </div>
+                    <div class="category-pill {% if filtro_tipo == 'Imagem' %}active{% endif %}" onclick="filterByCategory('Imagem')">
+                        <i class="fa-solid fa-image"></i> Imagens
+                    </div>
+                    <div class="category-pill {% if filtro_tipo == 'Vídeo' %}active{% endif %}" onclick="filterByCategory('Vídeo')">
+                        <i class="fa-solid fa-video"></i> Vídeos
+                    </div>
+                    <div class="category-pill {% if filtro_tipo == 'Áudio' %}active{% endif %}" onclick="filterByCategory('Áudio')">
+                        <i class="fa-solid fa-volume-high"></i> Áudio
+                    </div>
+                    <div class="category-pill {% if filtro_tipo == 'Documento' %}active{% endif %}" onclick="filterByCategory('Documento')">
+                        <i class="fa-solid fa-file-lines"></i> Documentos
+                    </div>
+                    <div class="category-pill {% if filtro_tipo == 'Outro' %}active{% endif %}" onclick="filterByCategory('Outro')">
+                        <i class="fa-solid fa-folder-open"></i> Outros
+                    </div>
+                </div>
+
+                <!-- List View (Table Container) -->
+                <div id="list_view_container" class="table-container">
                     <table class="table table-dark table-hover m-0">
                         <thead>
                             <tr>
@@ -516,10 +905,23 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if doc.arquivo_id or doc.url_arquivo %}
-                                        <span class="text-info small d-inline-block text-truncate" style="max-width: 140px;" title="{{ doc.nome_arquivo }}">
-                                            <i class="fa-solid fa-paperclip me-1"></i>{{ doc.nome_arquivo }}
-                                        </span>
+                                    {% if doc.url_arquivo or doc.blob_name %}
+                                        <div class="d-flex flex-column">
+                                            <span class="text-info small d-inline-block text-truncate" style="max-width: 140px;" title="{{ doc.nome_arquivo }}">
+                                                <i class="fa-solid fa-paperclip me-1"></i>{{ doc.nome_arquivo }}
+                                            </span>
+                                            {% if doc.tamanho_arquivo %}
+                                                <span class="text-secondary" style="font-size: 0.65rem;">
+                                                    {% if doc.tamanho_arquivo < 1024 %}
+                                                        {{ doc.tamanho_arquivo }} B
+                                                    {% elif doc.tamanho_arquivo < 1024*1024 %}
+                                                        {{ (doc.tamanho_arquivo / 1024) | round(1) }} KB
+                                                    {% else %}
+                                                        {{ (doc.tamanho_arquivo / (1024*1024)) | round(1) }} MB
+                                                    {% endif %}
+                                                </span>
+                                            {% endif %}
+                                        </div>
                                     {% else %}
                                         <span class="text-secondary small fst-italic">Sem ficheiro</span>
                                     {% endif %}
@@ -535,7 +937,7 @@
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </button>
                                         
-                                        {% if doc.arquivo_id or doc.url_arquivo %}
+                                        {% if doc.url_arquivo or doc.blob_name %}
                                             <!-- View file -->
                                             <a href="/view/{{ doc._id }}" target="_blank" class="table-action-btn btn-view" title="Visualizar ficheiro">
                                                 <i class="fa-solid fa-eye"></i>
@@ -562,6 +964,126 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Grid/Gallery View Container -->
+                <div id="grid_view_container" class="gallery-grid d-none">
+                    <div class="row w-100 g-3 m-0">
+                        {% for doc in documentos %}
+                        <div class="col-md-6 gallery-item">
+                            <div class="gallery-card">
+                                <!-- Badge Overlay for Category -->
+                                {% if doc.tipo_arquivo and doc.tipo_arquivo != 'Nenhum' %}
+                                    <div class="file-badge-overlay">
+                                        {% if doc.tipo_arquivo == 'Imagem' %}
+                                            <i class="fa-solid fa-image text-info"></i> Imagem
+                                        {% elif doc.tipo_arquivo == 'Vídeo' %}
+                                            <i class="fa-solid fa-video text-warning"></i> Vídeo
+                                        {% elif doc.tipo_arquivo == 'Áudio' %}
+                                            <i class="fa-solid fa-volume-high text-success"></i> Áudio
+                                        {% elif doc.tipo_arquivo == 'Documento' %}
+                                            <i class="fa-solid fa-file-lines text-primary"></i> Doc
+                                        {% else %}
+                                            <i class="fa-solid fa-file text-secondary"></i> Outro
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+
+                                <!-- Media Preview Container -->
+                                <div class="gallery-media-container">
+                                    {% if doc.url_arquivo or doc.blob_name %}
+                                        {% if doc.tipo_arquivo == 'Imagem' %}
+                                            <img src="/view/{{ doc._id }}" alt="{{ doc.nome_arquivo }}" class="gallery-media-img" loading="lazy" onclick="window.open('/view/{{ doc._id }}', '_blank')" style="cursor: pointer;">
+                                        {% elif doc.tipo_arquivo == 'Vídeo' %}
+                                            <video src="/view/{{ doc._id }}" class="gallery-media-video" controls controlsList="nodownload" preload="metadata"></video>
+                                        {% elif doc.tipo_arquivo == 'Áudio' %}
+                                            <div class="text-center w-100 px-3">
+                                                <i class="fa-solid fa-music gallery-media-placeholder mb-2"></i>
+                                                <audio src="/view/{{ doc._id }}" class="w-100" style="height: 30px;" controls preload="none"></audio>
+                                            </div>
+                                        {% elif doc.tipo_arquivo == 'Documento' %}
+                                            <div class="text-center">
+                                                <i class="fa-solid fa-file-pdf gallery-media-placeholder d-block mb-1 text-danger"></i>
+                                                <span class="text-truncate small text-secondary px-2 d-block" style="max-width: 180px;">{{ doc.nome_arquivo }}</span>
+                                            </div>
+                                        {% else %}
+                                            <div class="text-center">
+                                                <i class="fa-solid fa-file-arrow-up gallery-media-placeholder d-block mb-1"></i>
+                                                <span class="text-truncate small text-secondary px-2 d-block" style="max-width: 180px;">{{ doc.nome_arquivo }}</span>
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="text-center">
+                                            <i class="fa-solid fa-ban gallery-media-placeholder mb-1"></i>
+                                            <span class="small text-secondary d-block">Sem anexo</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Card Content -->
+                                <div class="gallery-card-body">
+                                    <div class="gallery-card-title" title="{{ doc.nome }}">{{ doc.nome }}</div>
+                                    <div class="gallery-card-subtitle">
+                                        <i class="fa-solid fa-user me-1 text-secondary"></i> 
+                                        {% if doc.idade %}{{ doc.idade }} anos{% else %}Idade n/d{% endif %} 
+                                        {% if doc.tamanho_arquivo %}
+                                            <span class="mx-1">•</span> 
+                                            <i class="fa-solid fa-weight-hanging me-1 text-secondary"></i>
+                                            {% if doc.tamanho_arquivo < 1024 %}
+                                                {{ doc.tamanho_arquivo }} B
+                                            {% elif doc.tamanho_arquivo < 1024*1024 %}
+                                                {{ (doc.tamanho_arquivo / 1024) | round(1) }} KB
+                                            {% else %}
+                                                {{ (doc.tamanho_arquivo / (1024*1024)) | round(1) }} MB
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Card tags -->
+                                    <div class="gallery-card-tags">
+                                        {% if doc.tags %}
+                                            {% for chave, valor in doc.tags.items() %}
+                                                <span class="badge-nosql fs-10" onclick="filtrarPorTag('{{ chave }}')" title="Filtrar por {{ chave }}">
+                                                    {{ chave }}: {{ valor }}
+                                                </span>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-secondary small fst-italic fs-10">Sem tags</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Actions Footer -->
+                                    <div class="gallery-card-footer">
+                                        <div class="d-flex gap-1 w-100 justify-content-between">
+                                            <button type="button" class="table-action-btn btn-view" title="Ver JSON NoSQL" onclick="verJson('{{ doc._id }}')">
+                                                <i class="fa-solid fa-code"></i>
+                                            </button>
+                                            <button type="button" class="table-action-btn btn-edit" title="Editar" onclick="abrirEditar('{{ doc._id }}')">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            {% if doc.url_arquivo or doc.blob_name %}
+                                                <a href="/view/{{ doc._id }}" target="_blank" class="table-action-btn btn-view" title="Ver arquivo">
+                                                    <i class="fa-solid fa-eye"></i>
+                                                </a>
+                                                <a href="/download/{{ doc._id }}" class="table-action-btn btn-download" title="Baixar">
+                                                    <i class="fa-solid fa-download"></i>
+                                                </a>
+                                            {% endif %}
+                                            <button type="button" class="table-action-btn btn-delete" title="Deletar" onclick="confirmarDeletar('{{ doc._id }}')">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="col-12 text-center text-secondary py-5">
+                            <i class="fa-solid fa-database fs-1 mb-3 opacity-25 d-block text-info"></i>
+                            Nenhum documento encontrado na base de dados.
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -800,26 +1322,57 @@
 
     window.removeEditDocTag = function(key) {
         delete editDocTags[key];
-        renderEditTags();
-    }
-
     // -------------------------------------------------------------
-    // DRAG & DROP FILE UPLOADS
+    // DRAG & DROP FILE UPLOADS WITH REAL-TIME PREVIEW
     // -------------------------------------------------------------
-    function setupDragAndDrop(zoneId, inputId, infoId, nameId, removeBtnId) {
+    function setupDragAndDrop(zoneId, inputId, infoId, nameId, removeBtnId, previewContainerId) {
         const dropZone = document.getElementById(zoneId);
         const fileInput = document.getElementById(inputId);
         const fileInfo = document.getElementById(infoId);
         const fileNameSpan = document.getElementById(nameId);
         const removeBtn = document.getElementById(removeBtnId);
+        const previewContainer = document.getElementById(previewContainerId);
 
         dropZone.addEventListener('click', () => fileInput.click());
 
+        function handleFileSelect(file) {
+            if (!file) return;
+            fileNameSpan.textContent = file.name + ' (' + formatarTamanhoBytes(file.size) + ')';
+            
+            previewContainer.innerHTML = '';
+            const fileType = file.type;
+            
+            if (fileType.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.className = 'form-file-preview-img';
+                img.src = URL.createObjectURL(file);
+                img.onload = () => URL.revokeObjectURL(img.src);
+                previewContainer.appendChild(img);
+            } else if (fileType.startsWith('video/')) {
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-file-video form-file-preview-icon text-warning';
+                previewContainer.appendChild(icon);
+            } else if (fileType.startsWith('audio/')) {
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-file-audio form-file-preview-icon text-success';
+                previewContainer.appendChild(icon);
+            } else if (fileType === 'application/pdf') {
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-file-pdf form-file-preview-icon text-danger';
+                previewContainer.appendChild(icon);
+            } else {
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-file-arrow-up form-file-preview-icon';
+                previewContainer.appendChild(icon);
+            }
+            
+            fileInfo.className = 'd-flex mt-2 p-3 rounded bg-dark border border-secondary flex-column align-items-center';
+            dropZone.classList.add('d-none');
+        }
+
         fileInput.addEventListener('change', () => {
             if (fileInput.files.length > 0) {
-                fileNameSpan.textContent = fileInput.files[0].name;
-                fileInfo.className = 'd-flex mt-2 p-2 rounded bg-dark border border-secondary align-items-center justify-content-between';
-                dropZone.classList.add('d-none');
+                handleFileSelect(fileInput.files[0]);
             }
         });
 
@@ -837,21 +1390,28 @@
             dropZone.classList.remove('dragover');
             if (e.dataTransfer.files.length > 0) {
                 fileInput.files = e.dataTransfer.files;
-                fileNameSpan.textContent = fileInput.files[0].name;
-                fileInfo.className = 'd-flex mt-2 p-2 rounded bg-dark border border-secondary align-items-center justify-content-between';
-                dropZone.classList.add('d-none');
+                handleFileSelect(fileInput.files[0]);
             }
         });
 
         removeBtn.addEventListener('click', () => {
             fileInput.value = '';
+            previewContainer.innerHTML = '';
             fileInfo.className = 'd-none';
             dropZone.classList.remove('d-none');
         });
     }
 
-    setupDragAndDrop('drop_zone', 'file_input', 'file_info', 'file_name', 'btn_remove_file');
-    setupDragAndDrop('edit_drop_zone', 'edit_file_input', 'edit_file_info', 'edit_file_name', 'btn_edit_remove_file');
+    function formatarTamanhoBytes(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    setupDragAndDrop('drop_zone', 'file_input', 'file_info', 'file_name', 'btn_remove_file', 'form_file_preview_container');
+    setupDragAndDrop('edit_drop_zone', 'edit_file_input', 'edit_file_info', 'edit_file_name', 'btn_edit_remove_file', 'edit_form_file_preview_container');
 
     // Edit file removal tracker
     const btnEditDeleteCurrentFile = document.getElementById('btn_edit_delete_current_file');
@@ -872,7 +1432,7 @@
     }
 
     // -------------------------------------------------------------
-    // VEWER: RAW JSON MODAL
+    // VIEWER: RAW JSON MODAL
     // -------------------------------------------------------------
     let currentModalJson = null;
     window.verJson = function(docId) {
@@ -927,7 +1487,8 @@
                 editRemoverArquivo.value = 'false';
 
                 if ((data.arquivo_id || data.url_arquivo) && data.nome_arquivo) {
-                    document.getElementById('edit_current_file_name').textContent = data.nome_arquivo;
+                    const sizeStr = data.tamanho_arquivo ? ' (' + formatarTamanhoBytes(data.tamanho_arquivo) + ')' : '';
+                    document.getElementById('edit_current_file_name').textContent = data.nome_arquivo + sizeStr;
                     editCurrentFileInfo.className = 'd-flex mt-2 p-2 rounded bg-dark-opacity border border-info align-items-center justify-content-between';
                 } else {
                     editCurrentFileInfo.className = 'd-none';
@@ -951,27 +1512,84 @@
     }
 
     // -------------------------------------------------------------
+    // VIEW SWITCHER (List vs Grid)
+    // -------------------------------------------------------------
+    window.setViewMode = function(mode) {
+        const listView = document.getElementById('list_view_container');
+        const gridView = document.getElementById('grid_view_container');
+        const btnList = document.getElementById('btn_view_list');
+        const btnGrid = document.getElementById('btn_view_grid');
+
+        if (mode === 'grid') {
+            listView.classList.add('d-none');
+            gridView.classList.remove('d-none');
+            btnList.classList.remove('active');
+            btnGrid.classList.add('active');
+        } else {
+            listView.classList.remove('d-none');
+            gridView.classList.add('d-none');
+            btnList.classList.add('active');
+            btnGrid.classList.remove('active');
+        }
+        localStorage.setItem('cosmos_view_mode', mode);
+    }
+
+    // -------------------------------------------------------------
+    // CATEGORY FILTRATION PILLS
+    // -------------------------------------------------------------
+    window.filterByCategory = function(category) {
+        document.getElementById('search_tipo').value = category;
+        document.querySelector('form[action="/"]').submit();
+    }
+
+    // -------------------------------------------------------------
     // ANALYTICS & CHARTS (Chart.js)
     // -------------------------------------------------------------
     document.addEventListener("DOMContentLoaded", () => {
-        // --- 1. FILE FORMATS DOUGHNUT CHART ---
-        const formatCounts = {};
+        // Load layout preference
+        const savedMode = localStorage.getItem('cosmos_view_mode') || 'list';
+        setViewMode(savedMode);
+
+        // --- 1. FILE CATEGORIES DOUGHNUT CHART ---
+        const categoryCounts = {
+            'IMAGENS': 0,
+            'VÍDEOS': 0,
+            'ÁUDIO': 0,
+            'DOCUMENTOS': 0,
+            'OUTROS': 0,
+            'SEM ARQUIVO': 0
+        };
         docs.forEach(doc => {
             if (doc.nome_arquivo) {
-                const parts = doc.nome_arquivo.split('.');
-                const ext = parts.length > 1 ? parts.pop().toUpperCase() : 'OUTROS';
-                formatCounts[ext] = (formatCounts[ext] || 0) + 1;
+                const cat = doc.tipo_arquivo;
+                if (cat === 'Imagem') categoryCounts['IMAGENS']++;
+                else if (cat === 'Vídeo') categoryCounts['VÍDEOS']++;
+                else if (cat === 'Áudio') categoryCounts['ÁUDIO']++;
+                else if (cat === 'Documento') categoryCounts['DOCUMENTOS']++;
+                else categoryCounts['OUTROS']++;
             } else {
-                formatCounts['SEM ARQUIVO'] = (formatCounts['SEM ARQUIVO'] || 0) + 1;
+                categoryCounts['SEM ARQUIVO']++;
             }
         });
 
-        const formatLabels = Object.keys(formatCounts);
-        const formatData = Object.values(formatCounts);
+        const formatLabels = [];
+        const formatData = [];
+        Object.keys(categoryCounts).forEach(k => {
+            if (categoryCounts[k] > 0) {
+                formatLabels.push(k);
+                formatData.push(categoryCounts[k]);
+            }
+        });
         
-        // Colors palette
-        const colors = ['#00b4d8', '#9d4edf', '#06d6a0', '#f72585', '#f8961e', '#7209b7', '#4a5568'];
-        const formatBgColors = formatLabels.map((_, idx) => colors[idx % colors.length]);
+        const categoryColorMap = {
+            'IMAGENS': '#00b4d8',
+            'VÍDEOS': '#f8961e',
+            'ÁUDIO': '#06d6a0',
+            'DOCUMENTOS': '#9d4edf',
+            'OUTROS': '#f72585',
+            'SEM ARQUIVO': '#4a5568'
+        };
+        const formatBgColors = formatLabels.map(l => categoryColorMap[l] || '#4a5568');
 
         const ctxFormatos = document.getElementById('chartFormatos').getContext('2d');
         new Chart(ctxFormatos, {
