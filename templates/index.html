@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="pt" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmos DB NoSQL Explorer</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts (Outfit & Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #070b13;
+            --card-bg: rgba(18, 26, 47, 0.7);
+            --border-color: rgba(255, 255, 255, 0.07);
+            --accent-blue: #00b4d8;
+            --accent-purple: #9d4edf;
+            --accent-teal: #06d6a0;
+            --accent-pink: #f72585;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --gradient-primary: linear-gradient(135deg, #00b4d8, #9d4edf);
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            background-image: 
+                radial-gradient(at 10% 10%, rgba(0, 180, 216, 0.12) 0px, transparent 40%),
+                radial-gradient(at 90% 90%, rgba(157, 78, 223, 0.12) 0px, transparent 40%),
+                radial-gradient(at 50% 50%, rgba(6, 214, 160, 0.03) 0px, transparent 50%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4, h5, h6, .font-outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Ambient scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(90deg, #00b4d8, #9d4edf);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35);
+            height: 100%;
+            transition: border-color 0.3s ease;
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .metric-card {
+            background: rgba(18, 26, 47, 0.85);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 180, 216, 0.4);
+            box-shadow: 0 10px 25px rgba(0, 180, 216, 0.15);
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--accent-blue);
+        }
+        .metric-card.green::before { background: var(--accent-teal); }
+        .metric-card.purple::before { background: var(--accent-purple); }
+
+        .metric-card:hover::before {
+            width: 6px;
+        }
+
+        .form-control, .form-select {
+            background-color: rgba(10, 15, 30, 0.75) !important;
+            border: 1px solid #2d3748 !important;
+            color: #f1f5f9 !important;
+            border-radius: 10px;
+            padding: 11px 16px;
+            transition: all 0.25s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent-blue) !important;
+            box-shadow: 0 0 0 4px rgba(0, 180, 216, 0.18) !important;
+        }
+
+        .form-control::placeholder {
+            color: #4a5568;
+        }
+
+        .table-container {
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+            background: rgba(10, 15, 30, 0.4);
+        }
+
+        .table {
+            margin-bottom: 0;
+            color: #e2e8f0;
+        }
+
+        .table-dark th {
+            background-color: rgba(10, 15, 30, 0.9);
+            border-bottom: 2px solid #2d3748;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.75px;
+            padding: 16px;
+        }
+
+        .table td {
+            background-color: transparent !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 16px;
+            vertical-align: middle;
+        }
+
+        .table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .table tbody tr:hover td {
+            background-color: rgba(0, 180, 216, 0.05) !important;
+        }
+
+        .badge-nosql {
+            background: rgba(0, 180, 216, 0.08);
+            color: var(--accent-blue);
+            border: 1px solid rgba(0, 180, 216, 0.2);
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            margin: 2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .badge-nosql:hover {
+            background: rgba(0, 180, 216, 0.15);
+            border-color: rgba(0, 180, 216, 0.4);
+            transform: scale(1.03);
+        }
+
+        .badge-nosql-removable {
+            background: rgba(157, 78, 223, 0.1);
+            color: var(--accent-purple);
+            border: 1px solid rgba(157, 78, 223, 0.25);
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            margin: 2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-nosql-removable .btn-close-tag {
+            cursor: pointer;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .badge-nosql-removable .btn-close-tag:hover {
+            opacity: 1;
+            color: var(--accent-pink);
+        }
+        
+        .btn-custom {
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 10px 22px;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-gradient {
+            background: var(--gradient-primary);
+            color: #fff !important;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 180, 216, 0.35);
+        }
+
+        .btn-gradient:hover {
+            box-shadow: 0 6px 20px rgba(0, 180, 216, 0.55);
+            transform: translateY(-2px);
+        }
+
+        .btn-gradient:active {
+            transform: translateY(0);
+        }
+
+        .btn-outline-custom {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-main);
+        }
+
+        .btn-outline-custom:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: var(--text-main);
+        }
+
+        .upload-drop-zone {
+            border: 2px dashed rgba(0, 180, 216, 0.3);
+            border-radius: 14px;
+            padding: 26px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(10, 15, 30, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .upload-drop-zone:hover, .upload-drop-zone.dragover {
+            border-color: var(--accent-blue);
+            background: rgba(0, 180, 216, 0.05);
+            box-shadow: 0 0 15px rgba(0, 180, 216, 0.12);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 180px;
+            width: 100%;
+        }
+
+        .modal-content {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header, .modal-footer {
+            border-color: rgba(255, 255, 255, 0.06);
+        }
+
+        .form-label {
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: 0.3px;
+        }
+
+        .table-action-btn {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(30, 41, 59, 0.4);
+            color: var(--text-muted);
+        }
+
+        .table-action-btn:hover {
+            color: #fff;
+            transform: scale(1.1);
+        }
+
+        .table-action-btn.btn-view:hover {
+            background: rgba(0, 180, 216, 0.15);
+            border-color: rgba(0, 180, 216, 0.4);
+            color: var(--accent-blue);
+        }
+
+        .table-action-btn.btn-edit:hover {
+            background: rgba(157, 78, 223, 0.15);
+            border-color: rgba(157, 78, 223, 0.4);
+            color: var(--accent-purple);
+        }
+
+        .table-action-btn.btn-download:hover {
+            background: rgba(6, 214, 160, 0.15);
+            border-color: rgba(6, 214, 160, 0.4);
+            color: var(--accent-teal);
+        }
+
+        .table-action-btn.btn-delete:hover {
+            background: rgba(247, 37, 133, 0.15);
+            border-color: rgba(247, 37, 133, 0.4);
+            color: var(--accent-pink);
+        }
+
+        .bg-dark-opacity {
+            background: rgba(10, 15, 30, 0.65);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <!-- Header -->
+    <div class="row align-items-center mb-5">
+        <div class="col-md-8">
+            <h1 class="m-0 font-outfit fw-extrabold display-5">
+                <i class="fa-solid fa-server me-3 text-info" style="filter: drop-shadow(0 0 10px rgba(0,180,216,0.3));"></i><span class="gradient-text">Cosmos DB</span> Explorer
+            </h1>
+            <p class="text-secondary mt-2 mb-0 fs-5">Laboratório de Armazenamento Não-Relacional e GridFS</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-4 mt-md-0">
+            <a href="/exportar_zip" class="btn btn-outline-custom btn-custom">
+                <i class="fa-solid fa-file-zipper me-2 text-info"></i>Exportar ZIP
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats & Analytics Dashboard Row -->
+    <div class="row g-4 mb-5">
+        <!-- Metric Total -->
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="text-secondary text-uppercase small fw-bold mb-1">Total de Registos</div>
+                    <div class="fs-1 fw-bold text-white font-outfit">{{ stats.total }}</div>
+                </div>
+                <div class="text-muted small mt-2"><i class="fa-solid fa-database me-1"></i> Documentos NoSQL</div>
+            </div>
+        </div>
+        <!-- Metric Average Age -->
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card green h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="text-secondary text-uppercase small fw-bold mb-1">Média de Idades</div>
+                    <div class="fs-1 fw-bold text-white font-outfit">
+                        {{ stats.media_idade }} <span class="fs-5 text-secondary fw-normal">anos</span>
+                    </div>
+                </div>
+                <div class="text-muted small mt-2"><i class="fa-solid fa-users me-1"></i> Amostra ativa</div>
+            </div>
+        </div>
+        <!-- Chart Formatos -->
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card purple h-100">
+                <div class="text-secondary text-uppercase small fw-bold mb-2">Formatos de Ficheiro</div>
+                <div class="chart-container">
+                    <canvas id="chartFormatos"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Chart Idades -->
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card h-100">
+                <div class="text-secondary text-uppercase small fw-bold mb-2">Grupos de Idade</div>
+                <div class="chart-container">
+                    <canvas id="chartIdades"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="row g-4">
+        <!-- Form Column (Left) -->
+        <div class="col-lg-4">
+            <div class="glass-panel">
+                <h5 class="fw-bold mb-4 text-white font-outfit d-flex align-items-center">
+                    <i class="fa-solid fa-cloud-arrow-up me-2 text-info"></i>Novo Documento
+                </h5>
+                <form action="/upload" method="POST" enctype="multipart/form-data">
+                    <!-- Nome -->
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-bold">Nome Completo</label>
+                        <input type="text" name="nome" class="form-control" placeholder="Ex: Geraldo Café" required>
+                    </div>
+                    <!-- Idade -->
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-bold">Idade</label>
+                        <input type="number" name="idade" class="form-control" placeholder="Ex: 28">
+                    </div>
+                    <!-- Tags Dinâmicas (Badge Manager) -->
+                    <div class="mb-4">
+                        <label class="form-label text-info small fw-bold"><i class="fa-solid fa-wand-magic-sparkles me-1"></i> Tags Dinâmicas (Schemaless)</label>
+                        <div class="d-flex gap-2 mb-2">
+                            <input type="text" id="tag_chave" class="form-control form-control-sm border-info" placeholder="Chave (ex: modulo)">
+                            <input type="text" id="tag_valor" class="form-control form-control-sm border-info" placeholder="Valor (ex: Cloud)">
+                            <button type="button" id="btn_add_tag" class="btn btn-info btn-sm text-white px-2"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div id="tag_container" class="d-flex flex-wrap gap-1 p-2 border border-secondary rounded bg-dark-opacity" style="min-height: 42px;">
+                            <span class="text-muted small fst-italic m-auto opacity-50" id="tag_placeholder">Nenhuma tag adicionada</span>
+                        </div>
+                        <input type="hidden" name="tags_dinamicas" id="hidden_tags" value="{}">
+                    </div>
+                    <!-- Drag and Drop File -->
+                    <div class="mb-4">
+                        <label class="form-label text-secondary small fw-bold">Anexo (Azure Blob / GridFS)</label>
+                        <div class="upload-drop-zone" id="drop_zone">
+                            <i class="fa-solid fa-cloud-arrow-up fs-3 mb-2 text-info"></i>
+                            <p class="mb-1 text-white small fw-semibold">Arraste seu ficheiro aqui</p>
+                            <p class="text-secondary mb-0" style="font-size: 0.7rem;">ou clique para procurar</p>
+                            <input type="file" name="arquivo" id="file_input" class="d-none">
+                        </div>
+                        <div id="file_info" class="d-none mt-2 p-2 rounded bg-dark border border-secondary align-items-center justify-content-between">
+                            <span class="text-info small text-truncate" style="max-width: 220px;"><i class="fa-solid fa-file me-2"></i><span id="file_name"></span></span>
+                            <button type="button" id="btn_remove_file" class="btn btn-link text-danger p-0 ms-2 text-decoration-none"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+                    <!-- Submit -->
+                    <button type="submit" class="btn btn-primary w-100 btn-custom btn-gradient mt-2">
+                        Salvar na Azure <i class="fa-solid fa-arrow-right ms-2"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Table and Filter Column (Right) -->
+        <div class="col-lg-8">
+            <div class="glass-panel">
+                <!-- Search & Filters -->
+                <form method="GET" action="/" class="row g-3 mb-4">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0 border-secondary"><i class="fa-solid fa-search text-secondary"></i></span>
+                            <input type="text" name="nome" class="form-control border-start-0 ps-0" placeholder="Pesquisar por nome..." value="{{ filtro_nome }}">
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0 border-secondary"><i class="fa-solid fa-tag text-secondary"></i></span>
+                            <input type="text" name="tag" class="form-control border-start-0 ps-0" placeholder="Pesquisar por metadados..." value="{{ filtro_tag }}">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-outline-custom w-100 btn-custom">Filtrar</button>
+                    </div>
+                </form>
+
+                <!-- Data Grid -->
+                <div class="table-container">
+                    <table class="table table-dark table-hover m-0">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th style="width: 80px;">Idade</th>
+                                <th>Metadados (NoSQL)</th>
+                                <th>Ficheiro</th>
+                                <th class="text-center" style="width: 180px;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in documentos %}
+                            <tr>
+                                <td class="fw-bold text-white font-outfit">{{ doc.nome }}</td>
+                                <td>
+                                    {% if doc.idade %}
+                                        {{ doc.idade }}
+                                    {% else %}
+                                        <span class="text-secondary opacity-25">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if doc.tags %}
+                                        {% for chave, valor in doc.tags.items() %}
+                                            <span class="badge-nosql" onclick="filtrarPorTag('{{ chave }}')" title="Clique para filtrar por esta tag">
+                                                <i class="fa-solid fa-tag fs-10"></i>{{ chave }}: {{ valor }}
+                                            </span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-secondary small fst-italic">Sem tags</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if doc.arquivo_id or doc.url_arquivo %}
+                                        <span class="text-info small d-inline-block text-truncate" style="max-width: 140px;" title="{{ doc.nome_arquivo }}">
+                                            <i class="fa-solid fa-paperclip me-1"></i>{{ doc.nome_arquivo }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-secondary small fst-italic">Sem ficheiro</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <!-- View raw JSON -->
+                                        <button type="button" class="table-action-btn btn-view" title="Visualizar JSON NoSQL" onclick="verJson('{{ doc._id }}')">
+                                            <i class="fa-solid fa-code"></i>
+                                        </button>
+                                        <!-- Edit document -->
+                                        <button type="button" class="table-action-btn btn-edit" title="Editar Documento" onclick="abrirEditar('{{ doc._id }}')">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </button>
+                                        
+                                        {% if doc.arquivo_id or doc.url_arquivo %}
+                                            <!-- View file -->
+                                            <a href="/view/{{ doc._id }}" target="_blank" class="table-action-btn btn-view" title="Visualizar ficheiro">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </a>
+                                            <!-- Download file -->
+                                            <a href="/download/{{ doc._id }}" class="table-action-btn btn-download" title="Descarregar ficheiro">
+                                                <i class="fa-solid fa-download"></i>
+                                            </a>
+                                        {% endif %}
+                                        <!-- Delete document -->
+                                        <button type="button" class="table-action-btn btn-delete" title="Eliminar registro" onclick="confirmarDeletar('{{ doc._id }}')">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-secondary py-5">
+                                    <i class="fa-solid fa-database fs-1 mb-3 opacity-25 d-block text-info"></i>
+                                    Nenhum documento encontrado na base de dados.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal View JSON -->
+<div class="modal fade" id="jsonModal" tabindex="-1" aria-labelledby="jsonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content text-white">
+            <div class="modal-header">
+                <h5 class="modal-title font-outfit" id="jsonModalLabel"><i class="fa-solid fa-code me-2 text-warning"></i>Documento NoSQL (JSON)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <pre class="bg-black p-3 rounded border border-secondary text-success overflow-auto" style="max-height: 450px; font-family: monospace; font-size: 0.85rem;"><code id="json_content"></code></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-custom btn-custom btn-sm" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary btn-custom btn-gradient btn-sm" id="btn_copy_json"><i class="fa-solid fa-copy me-1"></i>Copiar JSON</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Document -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-white">
+            <form id="edit_form" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title font-outfit" id="editModalLabel"><i class="fa-solid fa-pen-to-square me-2 text-info"></i>Editar Documento</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Name -->
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-bold">Nome Completo</label>
+                        <input type="text" name="nome" id="edit_nome" class="form-control" required>
+                    </div>
+                    <!-- Age -->
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-bold">Idade</label>
+                        <input type="number" name="idade" id="edit_idade" class="form-control">
+                    </div>
+                    <!-- Dynamic Tags Edit -->
+                    <div class="mb-4">
+                        <label class="form-label text-info small fw-bold"><i class="fa-solid fa-wand-magic-sparkles me-1"></i> Tags Dinâmicas</label>
+                        <div class="d-flex gap-2 mb-2">
+                            <input type="text" id="edit_tag_chave" class="form-control form-control-sm border-info" placeholder="Chave">
+                            <input type="text" id="edit_tag_valor" class="form-control form-control-sm border-info" placeholder="Valor">
+                            <button type="button" id="btn_edit_add_tag" class="btn btn-info btn-sm text-white px-2"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div id="edit_tag_container" class="d-flex flex-wrap gap-1 p-2 border border-secondary rounded bg-dark-opacity" style="min-height: 42px;">
+                            <span class="text-muted small fst-italic m-auto opacity-50">Nenhuma tag</span>
+                        </div>
+                        <input type="hidden" name="tags_dinamicas" id="edit_hidden_tags" value="{}">
+                    </div>
+                    <!-- File Replacement / Removal -->
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-bold">Anexo (Azure Blob / GridFS)</label>
+                        
+                        <!-- Dropzone for replacement -->
+                        <div class="upload-drop-zone" id="edit_drop_zone">
+                            <i class="fa-solid fa-cloud-arrow-up fs-3 mb-2 text-info"></i>
+                            <p class="mb-1 text-white small fw-semibold">Arraste um ficheiro para substituir</p>
+                            <p class="text-secondary mb-0" style="font-size: 0.7rem;">ou clique para procurar</p>
+                            <input type="file" name="arquivo" id="edit_file_input" class="d-none">
+                        </div>
+                        
+                        <!-- New file selected info -->
+                        <div id="edit_file_info" class="d-none mt-2 p-2 rounded bg-dark border border-secondary align-items-center justify-content-between">
+                            <span class="text-info small text-truncate" style="max-width: 220px;"><i class="fa-solid fa-file me-2"></i><span id="edit_file_name"></span></span>
+                            <button type="button" id="btn_edit_remove_file" class="btn btn-link text-danger p-0 ms-2 text-decoration-none"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        
+                        <!-- Current file details -->
+                        <div id="edit_current_file_info" class="d-none mt-2 p-2 rounded bg-dark-opacity border border-info align-items-center justify-content-between">
+                            <span class="text-muted small text-truncate" style="max-width: 200px;" id="edit_current_file_name_container">
+                                <i class="fa-solid fa-paperclip me-2 text-info"></i>Ficheiro atual: <span id="edit_current_file_name" class="text-white"></span>
+                            </span>
+                            <button type="button" id="btn_edit_delete_current_file" class="btn btn-link text-danger p-0 ms-2 text-decoration-none" title="Remover ficheiro do banco"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                        <input type="hidden" name="remover_arquivo" id="edit_remover_arquivo" value="false">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-custom btn-custom" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-custom btn-gradient">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirm Delete -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-danger">
+            <div class="modal-header border-danger">
+                <h5 class="modal-title text-danger font-outfit" id="deleteModalLabel"><i class="fa-solid fa-triangle-exclamation me-2"></i>Confirmar</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <p class="m-0 text-white-50">Tem a certeza que deseja eliminar permanentemente este registo NoSQL e o seu ficheiro do GridFS?</p>
+            </div>
+            <div class="modal-footer border-danger justify-content-center">
+                <button type="button" class="btn btn-outline-custom btn-custom btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <a href="#" id="btn_confirm_delete" class="btn btn-danger btn-custom btn-sm">Eliminar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Custom JS Logic -->
+<script>
+    // Injection of documents from Jinja into JSON
+    const docs = {{ documentos | tojson | safe }};
+
+    // -------------------------------------------------------------
+    // TAG MANAGER (New Document Form)
+    // -------------------------------------------------------------
+    let newDocTags = {};
+    const tagChaveInput = document.getElementById('tag_chave');
+    const tagValorInput = document.getElementById('tag_valor');
+    const btnAddTag = document.getElementById('btn_add_tag');
+    const tagContainer = document.getElementById('tag_container');
+    const hiddenTagsInput = document.getElementById('hidden_tags');
+    const tagPlaceholder = document.getElementById('tag_placeholder');
+
+    function renderTags() {
+        tagContainer.innerHTML = '';
+        const chaves = Object.keys(newDocTags);
+        if (chaves.length === 0) {
+            tagContainer.appendChild(tagPlaceholder);
+            hiddenTagsInput.value = '{}';
+            return;
+        }
+        
+        chaves.forEach(key => {
+            const val = newDocTags[key];
+            const badge = document.createElement('span');
+            badge.className = 'badge-nosql-removable';
+            badge.innerHTML = `
+                <span>${key}: ${val}</span>
+                <span class="btn-close-tag" onclick="removeNewDocTag('${key}')"><i class="fa-solid fa-circle-xmark"></i></span>
+            `;
+            tagContainer.appendChild(badge);
+        });
+        hiddenTagsInput.value = JSON.stringify(newDocTags);
+    }
+
+    function addNewDocTag() {
+        const key = tagChaveInput.value.trim();
+        const val = tagValorInput.value.trim();
+        if (key && val) {
+            newDocTags[key] = val;
+            tagChaveInput.value = '';
+            tagValorInput.value = '';
+            renderTags();
+            tagChaveInput.focus();
+        }
+    }
+
+    btnAddTag.addEventListener('click', addNewDocTag);
+    [tagChaveInput, tagValorInput].forEach(inp => {
+        inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addNewDocTag();
+            }
+        });
+    });
+
+    window.removeNewDocTag = function(key) {
+        delete newDocTags[key];
+        renderTags();
+    }
+
+    // -------------------------------------------------------------
+    // TAG MANAGER (Edit Document Form)
+    // -------------------------------------------------------------
+    let editDocTags = {};
+    const editTagChaveInput = document.getElementById('edit_tag_chave');
+    const editTagValorInput = document.getElementById('edit_tag_valor');
+    const btnEditAddTag = document.getElementById('btn_edit_add_tag');
+    const editTagContainer = document.getElementById('edit_tag_container');
+    const editHiddenTagsInput = document.getElementById('edit_hidden_tags');
+
+    function renderEditTags() {
+        editTagContainer.innerHTML = '';
+        const chaves = Object.keys(editDocTags);
+        if (chaves.length === 0) {
+            editTagContainer.innerHTML = '<span class="text-muted small fst-italic m-auto opacity-50">Nenhuma tag</span>';
+            editHiddenTagsInput.value = '{}';
+            return;
+        }
+        
+        chaves.forEach(key => {
+            const val = editDocTags[key];
+            const badge = document.createElement('span');
+            badge.className = 'badge-nosql-removable';
+            badge.innerHTML = `
+                <span>${key}: ${val}</span>
+                <span class="btn-close-tag" onclick="removeEditDocTag('${key}')"><i class="fa-solid fa-circle-xmark"></i></span>
+            `;
+            editTagContainer.appendChild(badge);
+        });
+        editHiddenTagsInput.value = JSON.stringify(editDocTags);
+    }
+
+    function addEditDocTag() {
+        const key = editTagChaveInput.value.trim();
+        const val = editTagValorInput.value.trim();
+        if (key && val) {
+            editDocTags[key] = val;
+            editTagChaveInput.value = '';
+            editTagValorInput.value = '';
+            renderEditTags();
+            editTagChaveInput.focus();
+        }
+    }
+
+    btnEditAddTag.addEventListener('click', addEditDocTag);
+    [editTagChaveInput, editTagValorInput].forEach(inp => {
+        inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addEditDocTag();
+            }
+        });
+    });
+
+    window.removeEditDocTag = function(key) {
+        delete editDocTags[key];
+        renderEditTags();
+    }
+
+    // -------------------------------------------------------------
+    // DRAG & DROP FILE UPLOADS
+    // -------------------------------------------------------------
+    function setupDragAndDrop(zoneId, inputId, infoId, nameId, removeBtnId) {
+        const dropZone = document.getElementById(zoneId);
+        const fileInput = document.getElementById(inputId);
+        const fileInfo = document.getElementById(infoId);
+        const fileNameSpan = document.getElementById(nameId);
+        const removeBtn = document.getElementById(removeBtnId);
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                fileNameSpan.textContent = fileInput.files[0].name;
+                fileInfo.className = 'd-flex mt-2 p-2 rounded bg-dark border border-secondary align-items-center justify-content-between';
+                dropZone.classList.add('d-none');
+            }
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                fileNameSpan.textContent = fileInput.files[0].name;
+                fileInfo.className = 'd-flex mt-2 p-2 rounded bg-dark border border-secondary align-items-center justify-content-between';
+                dropZone.classList.add('d-none');
+            }
+        });
+
+        removeBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            fileInfo.className = 'd-none';
+            dropZone.classList.remove('d-none');
+        });
+    }
+
+    setupDragAndDrop('drop_zone', 'file_input', 'file_info', 'file_name', 'btn_remove_file');
+    setupDragAndDrop('edit_drop_zone', 'edit_file_input', 'edit_file_info', 'edit_file_name', 'btn_edit_remove_file');
+
+    // Edit file removal tracker
+    const btnEditDeleteCurrentFile = document.getElementById('btn_edit_delete_current_file');
+    const editRemoverArquivo = document.getElementById('edit_remover_arquivo');
+    const editCurrentFileInfo = document.getElementById('edit_current_file_info');
+    
+    btnEditDeleteCurrentFile.addEventListener('click', () => {
+        editRemoverArquivo.value = 'true';
+        editCurrentFileInfo.className = 'd-none';
+    });
+
+    // -------------------------------------------------------------
+    // SEARCH BY TAG HELPER
+    // -------------------------------------------------------------
+    window.filtrarPorTag = function(tagChave) {
+        document.querySelector('input[name="tag"]').value = tagChave;
+        document.querySelector('form[action="/"]').submit();
+    }
+
+    // -------------------------------------------------------------
+    // VEWER: RAW JSON MODAL
+    // -------------------------------------------------------------
+    let currentModalJson = null;
+    window.verJson = function(docId) {
+        fetch('/api/documento/' + docId)
+            .then(res => res.json())
+            .then(data => {
+                currentModalJson = JSON.stringify(data, null, 2);
+                document.getElementById('json_content').textContent = currentModalJson;
+                const modal = new bootstrap.Modal(document.getElementById('jsonModal'));
+                modal.show();
+            })
+            .catch(err => {
+                alert('Erro ao carregar documento NoSQL: ' + err);
+            });
+    }
+
+    document.getElementById('btn_copy_json').addEventListener('click', () => {
+        if (currentModalJson) {
+            navigator.clipboard.writeText(currentModalJson)
+                .then(() => {
+                    const btn = document.getElementById('btn_copy_json');
+                    const origHtml = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa-solid fa-check me-1"></i>Copiado!';
+                    btn.className = 'btn btn-success btn-custom btn-sm';
+                    setTimeout(() => {
+                        btn.innerHTML = origHtml;
+                        btn.className = 'btn btn-primary btn-custom btn-gradient btn-sm';
+                    }, 2000);
+                });
+        }
+    });
+
+    // -------------------------------------------------------------
+    // EDIT MODAL SETUP
+    // -------------------------------------------------------------
+    window.abrirEditar = function(docId) {
+        fetch('/api/documento/' + docId)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('edit_form').action = '/editar/' + docId;
+                document.getElementById('edit_nome').value = data.nome || '';
+                document.getElementById('edit_idade').value = data.idade || '';
+                
+                // Load Tags
+                editDocTags = data.tags || {};
+                renderEditTags();
+
+                // File boxes management
+                document.getElementById('edit_file_input').value = '';
+                document.getElementById('edit_file_info').className = 'd-none';
+                document.getElementById('edit_drop_zone').className = 'upload-drop-zone';
+                editRemoverArquivo.value = 'false';
+
+                if ((data.arquivo_id || data.url_arquivo) && data.nome_arquivo) {
+                    document.getElementById('edit_current_file_name').textContent = data.nome_arquivo;
+                    editCurrentFileInfo.className = 'd-flex mt-2 p-2 rounded bg-dark-opacity border border-info align-items-center justify-content-between';
+                } else {
+                    editCurrentFileInfo.className = 'd-none';
+                }
+
+                const modal = new bootstrap.Modal(document.getElementById('editModal'));
+                modal.show();
+            })
+            .catch(err => {
+                alert('Erro ao carregar documento para edição: ' + err);
+            });
+    }
+
+    // -------------------------------------------------------------
+    // CONFIRM DELETE DIALOG
+    // -------------------------------------------------------------
+    window.confirmarDeletar = function(docId) {
+        document.getElementById('btn_confirm_delete').href = '/deletar/' + docId;
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+
+    // -------------------------------------------------------------
+    // ANALYTICS & CHARTS (Chart.js)
+    // -------------------------------------------------------------
+    document.addEventListener("DOMContentLoaded", () => {
+        // --- 1. FILE FORMATS DOUGHNUT CHART ---
+        const formatCounts = {};
+        docs.forEach(doc => {
+            if (doc.nome_arquivo) {
+                const parts = doc.nome_arquivo.split('.');
+                const ext = parts.length > 1 ? parts.pop().toUpperCase() : 'OUTROS';
+                formatCounts[ext] = (formatCounts[ext] || 0) + 1;
+            } else {
+                formatCounts['SEM ARQUIVO'] = (formatCounts['SEM ARQUIVO'] || 0) + 1;
+            }
+        });
+
+        const formatLabels = Object.keys(formatCounts);
+        const formatData = Object.values(formatCounts);
+        
+        // Colors palette
+        const colors = ['#00b4d8', '#9d4edf', '#06d6a0', '#f72585', '#f8961e', '#7209b7', '#4a5568'];
+        const formatBgColors = formatLabels.map((_, idx) => colors[idx % colors.length]);
+
+        const ctxFormatos = document.getElementById('chartFormatos').getContext('2d');
+        new Chart(ctxFormatos, {
+            type: 'doughnut',
+            data: {
+                labels: formatLabels,
+                datasets: [{
+                    data: formatData,
+                    backgroundColor: formatBgColors,
+                    borderWidth: 1,
+                    borderColor: '#0f172a'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#94a3b8',
+                            boxWidth: 10,
+                            font: { size: 9, family: 'Inter' }
+                        }
+                    }
+                }
+            }
+        });
+
+        // --- 2. AGE GROUPS BAR CHART ---
+        const ageGroups = {
+            'Jovem (<18)': 0,
+            '18 - 29': 0,
+            '30 - 49': 0,
+            'Sênior (50+)': 0,
+            'Não Esp.': 0
+        };
+
+        docs.forEach(doc => {
+            const age = doc.idade;
+            if (age === null || age === undefined) {
+                ageGroups['Não Esp.']++;
+            } else if (age < 18) {
+                ageGroups['Jovem (<18)']++;
+            } else if (age >= 18 && age <= 29) {
+                ageGroups['18 - 29']++;
+            } else if (age >= 30 && age <= 49) {
+                ageGroups['30 - 49']++;
+            } else {
+                ageGroups['Sênior (50+)']++;
+            }
+        });
+
+        const ctxIdades = document.getElementById('chartIdades').getContext('2d');
+        new Chart(ctxIdades, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(ageGroups),
+                datasets: [{
+                    label: 'Registos',
+                    data: Object.values(ageGroups),
+                    backgroundColor: 'rgba(157, 78, 223, 0.4)',
+                    borderColor: '#9d4edf',
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#64748b',
+                            font: { size: 9 },
+                            precision: 0
+                        },
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#64748b',
+                            font: { size: 9 }
+                        },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    });
+</script>
+</body>
+</html>

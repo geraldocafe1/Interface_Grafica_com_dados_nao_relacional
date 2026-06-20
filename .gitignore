@@ -1,0 +1,16 @@
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Environment variables (sensitive data)
+.env
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE configurations
+.vscode/
+.idea/

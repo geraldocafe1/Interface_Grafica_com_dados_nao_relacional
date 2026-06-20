@@ -1,0 +1,2 @@
+Este e um ficheiro de teste carregado para a base de dados Cosmos DB NoSQL via GridFS do Explorer.
+Parabens! O upload funciona perfeitamente.
